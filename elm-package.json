@@ -1,0 +1,16 @@
+{
+    "version": "0.0.1",
+    "summary": "Perlin noise functions ported from Processing",
+    "repository": "https://github.com/dy-dx/elm-proc-noise.git",
+    "license": "MIT",
+    "source-directories": [
+        "src"
+    ],
+    "exposed-modules": [
+        "Noise.ProcNoise"
+    ],
+    "native-modules": true,
+    "dependencies": {
+        "elm-lang/core": "1.1.1 <= v < 2.0.0"
+    }
+}
