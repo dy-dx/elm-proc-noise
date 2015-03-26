@@ -3,6 +3,7 @@
   "version": "",
   "description": "",
   "dependencies": {
+    "memoizee": "^0.3.8",
     "proc-noise": "0.0.1"
   }
 }

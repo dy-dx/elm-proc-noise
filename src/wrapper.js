@@ -1,5 +1,6 @@
 
 var PerlinGenerator = require('proc-noise');
+var memoize = require('memoizee');
 
 Elm.Native.Noise = Elm.Native.Noise || {};
 Elm.Native.Noise.ProcNoise = {};
@@ -12,9 +13,11 @@ Elm.Native.Noise.ProcNoise.make = function(elm) {
   }
 
 
-  function generator (seed) {
+  function _generator (seed) {
     return new PerlinGenerator(seed);
   }
+
+  var generator = memoize(_generator, { max: 1 });
 
   function perlin (seed, x) {
     return generator(seed).noise(x);

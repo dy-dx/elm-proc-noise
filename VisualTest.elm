@@ -30,7 +30,7 @@ pixelColor (x, y) =
 
 drawPixel : (Float, Float) -> Form
 drawPixel (x, y) =
-  square 1
+  rect 1 1
     |> filled (pixelColor (x, y))
     |> move (toCartesian (x, y))
 
