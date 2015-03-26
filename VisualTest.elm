@@ -1,6 +1,7 @@
 module VisualTest where
 
 import Noise.ProcNoise
+import Noise.PureNoise
 
 
 import Signal
@@ -14,7 +15,8 @@ import Time
 import Debug
 
 
-(w,h) = (256, 256)
+--(w,h) = (256, 256)
+(w,h) = (64, 64)
 seed = 0.0
 
 
@@ -25,7 +27,8 @@ toCartesian (x, y) =
 
 pixelColor : (Float, Float) -> Color.Color
 pixelColor (x, y) =
-  Color.grayscale (Noise.ProcNoise.perlin2 seed (x/w) (y/h))
+  --Color.grayscale (Noise.ProcNoise.perlin2 seed (x/w) (y/h))
+  Color.grayscale (Noise.PureNoise.perlin2 seed (x/w) (y/h))
 
 
 drawPixel : (Float, Float) -> Form
