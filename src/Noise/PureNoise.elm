@@ -1,4 +1,6 @@
-module Noise.PureNoise where
+module Noise.PureNoise
+    ( NoiseGenerator, generate, dim1, dim2, dim3)
+  where
 
 {- An attempt to implement Perlin Noise in pure Elm -}
 
@@ -14,8 +16,7 @@ perlin_ywrapb = 4
 perlin_ywrap  = 1 `shiftLeft` perlin_ywrapb
 perlin_zwrapb = 8
 perlin_zwrap  = 1 `shiftLeft` perlin_zwrapb
---perlin_size   = 4095
-perlin_size   = 2047
+perlin_size   = 4095
 
 -- Constants we may want to make configurable later
 
@@ -47,12 +48,12 @@ noise_fsc i =
     )
 
 
-perlin_array: Float -> Array Float
-perlin_array seed =
+seedRands: Int -> Array Float
+seedRands seed =
   Array.fromList
     (Random.generate
       (Random.list (perlin_size + 1) (Random.float 0 1))
-      (Random.initialSeed (floor seed))
+      (Random.initialSeed seed)
     |> fst
     )
 
@@ -64,23 +65,37 @@ get i arr =
 
 {-| dear lord this was not a good idea -}
 
-noise: Int -> Array Float -> Int -> Int -> Int -> Float -> Float -> Float -> Float -> Float -> Float
-noise octave parr xi yi zi xf yf zf r ampl =
+perlin: Array Float -> Float -> Float -> Float -> Float
+perlin rands x y z =
+  let octave = 0
+      xi = floor x
+      yi = floor y
+      zi = floor z
+      xf = x - (toFloat xi)
+      yf = y - (toFloat yi)
+      zf = z - (toFloat zi)
+      r = 0
+      ampl = 0.5
+
+  in noiseHelper octave rands xi yi zi xf yf zf r ampl
+
+noiseHelper: Int -> Array Float -> Int -> Int -> Int -> Float -> Float -> Float -> Float -> Float -> Float
+noiseHelper octave rands xi yi zi xf yf zf r ampl =
   if | (octave == perlin_octaves) -> r
      | otherwise ->
         let of_0 = xi + (yi `shiftLeft` perlin_ywrapb) + (zi `shiftLeft` perlin_zwrapb)
             rxf = noise_fsc xf
             ryf = noise_fsc yf
-            n1_0 = get (of_0 `and` perlin_size) parr
-            n1_1 = n1_0 + (rxf * ((get ((of_0 + 1) `and` perlin_size) parr) - n1_0))
-            n2_0 = get ((of_0 + perlin_ywrap) `and` perlin_size) parr
-            n2_1 = n2_0 + (rxf * ((get ((of_0 + perlin_ywrap + 1) `and` perlin_size) parr) - n2_0))
+            n1_0 = get (of_0 `and` perlin_size) rands
+            n1_1 = n1_0 + (rxf * ((get ((of_0 + 1) `and` perlin_size) rands) - n1_0))
+            n2_0 = get ((of_0 + perlin_ywrap) `and` perlin_size) rands
+            n2_1 = n2_0 + (rxf * ((get ((of_0 + perlin_ywrap + 1) `and` perlin_size) rands) - n2_0))
             n1_2 = n1_1 + (ryf * (n2_1-n1_1))
             of_1 = of_0 + perlin_zwrap
-            n2_2 = get (of_1 `and` perlin_size) parr
-            n2_3 = n2_2 + (rxf * ((get ((of_1 + 1) `and` perlin_size) parr) - n2_2))
-            n3_0 = get ((of_1 + perlin_ywrap) `and` perlin_size) parr
-            n3_1 = n3_0 + (rxf * ((get ((of_1 + perlin_ywrap + 1) `and` perlin_size) parr) - n3_0))
+            n2_2 = get (of_1 `and` perlin_size) rands
+            n2_3 = n2_2 + (rxf * ((get ((of_1 + 1) `and` perlin_size) rands) - n2_2))
+            n3_0 = get ((of_1 + perlin_ywrap) `and` perlin_size) rands
+            n3_1 = n3_0 + (rxf * ((get ((of_1 + perlin_ywrap + 1) `and` perlin_size) rands) - n3_0))
             n2_4 = n2_3 + (ryf * (n3_1 - n2_3))
             n1_3 = n1_2 + ((noise_fsc zf) * (n2_4 - n1_2))
 
@@ -102,29 +117,28 @@ noise octave parr xi yi zi xf yf zf r ampl =
             zi'' = if (zf' >= 1) then zi' + 1 else zi'
             zf'' = if (zf' >= 1) then zf' - 1 else zf'
 
-        in r + (noise (octave+1) parr xi'' yi'' zi'' xf'' yf'' zf'' r' ampl')
+        in r + (noiseHelper (octave+1) rands xi'' yi'' zi'' xf'' yf'' zf'' r' ampl')
 
 
+type NoiseGenerator a =
+  NoiseGenerator (a -> Float)
 
-perlin3: Float -> Float -> Float -> Float -> Float
-perlin3 seed x y z =
-  let octave = 0
-      parr = perlin_array seed
-      xi = floor x
-      yi = floor y
-      zi = floor z
-      xf = x - (toFloat xi)
-      yf = y - (toFloat yi)
-      zf = z - (toFloat zi)
-      r = 0
-      ampl = 0.5
-
-  in noise octave parr xi yi zi xf yf zf r ampl
+generate : NoiseGenerator a -> a -> Float
+generate (NoiseGenerator generator) coords =
+  generator coords
 
 
+dim3: Int -> NoiseGenerator (Float, Float, Float)
+dim3 seed =
+  let rands = seedRands seed
+  in NoiseGenerator (\(x, y, z) -> perlin rands x y z)
 
-perlin: Float -> Float -> Float
-perlin seed x = perlin3 seed x 0 0
+dim2: Int -> NoiseGenerator (Float, Float)
+dim2 seed =
+  let rands = seedRands seed
+  in NoiseGenerator (\(x, y) -> perlin rands x y 0)
 
-perlin2: Float -> Float -> Float -> Float
-perlin2 seed x y = perlin3 seed x y 0
+dim1: Int -> NoiseGenerator Float
+dim1 seed =
+  let rands = seedRands seed
+  in NoiseGenerator (\x -> perlin rands x 0 0)

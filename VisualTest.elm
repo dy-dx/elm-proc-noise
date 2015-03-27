@@ -2,6 +2,7 @@ module VisualTest where
 
 import Noise.ProcNoise
 import Noise.PureNoise
+import Noise.PureNoise (NoiseGenerator)
 
 
 import Signal
@@ -15,9 +16,8 @@ import Time
 import Debug
 
 
---(w,h) = (256, 256)
-(w,h) = (64, 64)
-seed = 0.0
+(w,h) = (256, 256)
+seed = 55
 
 
 toCartesian : (Float, Float) -> (Float, Float)
@@ -25,25 +25,27 @@ toCartesian (x, y) =
   (x - (w/2), y - (h/2))
 
 
-pixelColor : (Float, Float) -> Color.Color
-pixelColor (x, y) =
-  --Color.grayscale (Noise.ProcNoise.perlin2 seed (x/w) (y/h))
-  Color.grayscale (Noise.PureNoise.perlin2 seed (x/w) (y/h))
+pixelColor : (Float, Float) -> NoiseGenerator (Float, Float) -> Color.Color
+pixelColor (x, y) noiseGenerator =
+  --Color.grayscale (Noise.PureNoise.perlin2 seed (x/w) (y/h))
+  Color.grayscale
+    ( Noise.PureNoise.generate noiseGenerator (x/w, y/h) )
 
 
-drawPixel : (Float, Float) -> Form
-drawPixel (x, y) =
+drawPixel : (Float, Float) -> Color.Color -> Form
+drawPixel (x, y) color =
   rect 1 1
-    |> filled (pixelColor (x, y))
+    |> filled color
     |> move (toCartesian (x, y))
 
 
 texture : Element
 texture =
-  List.concatMap
+  let noiseGen = (Noise.PureNoise.dim2 seed)
+  in List.concatMap
     (\x ->
       List.map
-        (\y -> drawPixel (x, y))
+        (\y -> drawPixel (x, y) (pixelColor (x, y) noiseGen))
         [0..(h-1)]
     )
     [0..(w-1)]
